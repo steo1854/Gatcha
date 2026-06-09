@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gatcha - 택시 인원 나누기</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18211c;
+      --muted: #66716a;
+      --line: #d9e0db;
+      --paper: #fffdf7;
+      --accent: #ffca3a;
+      --accent-dark: #202720;
+      --green: #2f7d53;
+      --shadow: 0 18px 50px rgba(43, 52, 46, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255, 202, 58, 0.34), transparent 28rem),
+        linear-gradient(145deg, #f5f2e9, #e8efe8);
+    }
+
+    main {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 8px; font-size: clamp(2.3rem, 7vw, 5rem); line-height: 0.95; letter-spacing: -0.08em; }
+    h1 span { color: var(--green); }
+    header p { margin-bottom: 0; color: var(--muted); }
+
+    .badge {
+      flex: none;
+      padding: 10px 14px;
+      border: 1px solid rgba(24, 33, 28, 0.15);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.55);
+      font-weight: 800;
+    }
+
+    .panel {
+      padding: clamp(20px, 4vw, 36px);
+      border: 1px solid rgba(24, 33, 28, 0.12);
+      border-radius: 28px;
+      background: rgba(255, 253, 247, 0.9);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    label { display: grid; gap: 8px; font-weight: 800; }
+
+    input, textarea, button {
+      font: inherit;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      outline: none;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input {
+      padding: 14px 16px;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    textarea {
+      min-height: 128px;
+      resize: vertical;
+      padding: 14px 16px;
+      line-height: 1.6;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(47, 125, 83, 0.12);
+    }
+
+    .names { margin-top: 18px; }
+    .hint { color: var(--muted); font-size: 0.86rem; font-weight: 500; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-weight: 900;
+    }
+
+    .primary {
+      flex: 1;
+      color: #171b17;
+      background: var(--accent);
+      box-shadow: 0 8px 0 #d7a91d;
+    }
+
+    .primary:active { transform: translateY(4px); box-shadow: 0 4px 0 #d7a91d; }
+    .secondary { background: #e7ece8; color: var(--ink); }
+
+    #summary {
+      min-height: 28px;
+      margin: 30px 0 14px;
+      color: var(--green);
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .taxi {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      animation: appear 0.35s both;
+    }
+
+    .taxi h2 {
+      display: flex;
+      justify-content: space-between;
+      margin: 0;
+      padding: 15px 18px;
+      background: var(--accent-dark);
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .taxi h2 span { color: var(--accent); }
+
+    .taxi ol {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 16px 18px 18px 42px;
+    }
+
+    .taxi li { padding-left: 3px; font-weight: 750; }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 650px) {
+      main { padding-top: 28px; }
+      header { align-items: start; flex-direction: column; }
+      .controls { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Gat<span>cha</span></h1>
+        <p>택시 인원을 공정하게 섞고 빠르게 나눕니다.</p>
+      </div>
+      <div class="badge">Random Taxi Groups</div>
+    </header>
+
+    <section class="panel">
+      <div class="controls">
+        <label>
+          총 인원
+          <input id="total" type="number" min="1" max="500" value="19">
+        </label>
+        <label>
+          택시당 최대 인원
+          <input id="capacity" type="number" min="1" max="50" value="4">
+        </label>
+      </div>
+
+      <label class="names">
+        이름 목록 <span class="hint">선택 사항 · 쉼표 또는 줄바꿈으로 구분</span>
+        <textarea id="names" placeholder="예: 김민수, 이지은, 박서준&#10;비워두면 1번 인원, 2번 인원... 으로 생성됩니다."></textarea>
+      </label>
+
+      <div class="actions">
+        <button class="primary" id="draw">랜덤으로 갓챠!</button>
+        <button class="secondary" id="copy" type="button">결과 복사</button>
+      </div>
+
+      <div id="summary" aria-live="polite"></div>
+      <div id="groups" class="groups"></div>
+    </section>
+  </main>
+
+  <script>
+    const totalInput = document.querySelector("#total");
+    const capacityInput = document.querySelector("#capacity");
+    const namesInput = document.querySelector("#names");
+    const summary = document.querySelector("#summary");
+    const groupsElement = document.querySelector("#groups");
+    let latestGroups = [];
+
+    function shuffle(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function getPeople(total) {
+      const entered = namesInput.value
+        .split(/[\n,]+/)
+        .map((name) => name.trim())
+        .filter(Boolean);
+
+      if (entered.length > total) {
+        throw new Error(`이름이 총 인원보다 ${entered.length - total}명 많습니다.`);
+      }
+
+      const people = [...entered];
+      for (let i = people.length + 1; i <= total; i++) {
+        people.push(`${i}번 인원`);
+      }
+      return people;
+    }
+
+    function drawGroups() {
+      const total = Number(totalInput.value);
+      const capacity = Number(capacityInput.value);
+
+      if (!Number.isInteger(total) || total < 1 || !Number.isInteger(capacity) || capacity < 1) {
+        summary.textContent = "총 인원과 택시당 인원을 1 이상의 정수로 입력해 주세요.";
+        groupsElement.replaceChildren();
+        return;
+      }
+
+      try {
+        const shuffled = shuffle(getPeople(total));
+        latestGroups = [];
+        for (let i = 0; i < shuffled.length; i += capacity) {
+          latestGroups.push(shuffled.slice(i, i + capacity));
+        }
+
+        const sizes = latestGroups.map((group) => group.length).join(" · ");
+        summary.textContent = `총 ${total}명 → ${latestGroups.length}대 배정 (${sizes}명)`;
+        groupsElement.replaceChildren(...latestGroups.map(createTaxiCard));
+      } catch (error) {
+        summary.textContent = error.message;
+        groupsElement.replaceChildren();
+      }
+    }
+
+    function createTaxiCard(group, index) {
+      const article = document.createElement("article");
+      article.className = "taxi";
+      article.style.animationDelay = `${index * 45}ms`;
+
+      const heading = document.createElement("h2");
+      heading.append(`택시 ${index + 1}`);
+      const count = document.createElement("span");
+      count.textContent = `${group.length}명`;
+      heading.append(count);
+
+      const list = document.createElement("ol");
+      group.forEach((person) => {
+        const item = document.createElement("li");
+        item.textContent = person;
+        list.append(item);
+      });
+
+      article.append(heading, list);
+      return article;
+    }
+
+    async function copyResult() {
+      if (!latestGroups.length) {
+        summary.textContent = "먼저 랜덤 배정을 실행해 주세요.";
+        return;
+      }
+
+      const text = latestGroups
+        .map((group, index) => `택시 ${index + 1} (${group.length}명): ${group.join(", ")}`)
+        .join("\n");
+
+      try {
+        await navigator.clipboard.writeText(text);
+        summary.textContent = "배정 결과를 클립보드에 복사했습니다.";
+      } catch {
+        summary.textContent = "브라우저에서 복사를 허용하지 않았습니다.";
+      }
+    }
+
+    document.querySelector("#draw").addEventListener("click", drawGroups);
+    document.querySelector("#copy").addEventListener("click", copyResult);
+    drawGroups();
+  </script>
+</body>
+</html>
