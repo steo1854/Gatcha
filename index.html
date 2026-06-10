@@ -100,11 +100,11 @@
 
     label { display: grid; gap: 8px; font-weight: 800; }
 
-    input, textarea, button {
+    input, textarea, select, button {
       font: inherit;
     }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -114,7 +114,7 @@
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    input {
+    input, select {
       padding: 14px 16px;
       font-size: 1.15rem;
       font-weight: 800;
@@ -127,7 +127,7 @@
       line-height: 1.6;
     }
 
-    input:focus, textarea:focus {
+    input:focus, textarea:focus, select:focus {
       border-color: var(--green);
       box-shadow: 0 0 0 4px rgba(47, 125, 83, 0.12);
     }
@@ -235,6 +235,13 @@
           택시당 최대 인원
           <input id="capacity" type="number" min="1" max="50" value="4">
         </label>
+        <label>
+          분배 방식
+          <select id="distribution">
+            <option value="remainder">기존 방식 · 마지막 차에 나머지</option>
+            <option value="balanced">균등 방식 · 차량별 인원 차이 최소화</option>
+          </select>
+        </label>
       </div>
 
       <label class="names">
@@ -255,6 +262,7 @@
   <script>
     const totalInput = document.querySelector("#total");
     const capacityInput = document.querySelector("#capacity");
+    const distributionInput = document.querySelector("#distribution");
     const namesInput = document.querySelector("#names");
     const summary = document.querySelector("#summary");
     const groupsElement = document.querySelector("#groups");
@@ -286,6 +294,29 @@
       return people;
     }
 
+    function distributePeople(people, capacity, distribution) {
+      if (distribution === "balanced") {
+        const taxiCount = Math.ceil(people.length / capacity);
+        const baseSize = Math.floor(people.length / taxiCount);
+        const largerTaxiCount = people.length % taxiCount;
+        const groups = [];
+        let start = 0;
+
+        for (let i = 0; i < taxiCount; i++) {
+          const groupSize = baseSize + (i < largerTaxiCount ? 1 : 0);
+          groups.push(people.slice(start, start + groupSize));
+          start += groupSize;
+        }
+        return groups;
+      }
+
+      const groups = [];
+      for (let i = 0; i < people.length; i += capacity) {
+        groups.push(people.slice(i, i + capacity));
+      }
+      return groups;
+    }
+
     function drawGroups() {
       const total = Number(totalInput.value);
       const capacity = Number(capacityInput.value);
@@ -298,10 +329,7 @@
 
       try {
         const shuffled = shuffle(getPeople(total));
-        latestGroups = [];
-        for (let i = 0; i < shuffled.length; i += capacity) {
-          latestGroups.push(shuffled.slice(i, i + capacity));
-        }
+        latestGroups = distributePeople(shuffled, capacity, distributionInput.value);
 
         const sizes = latestGroups.map((group) => group.length).join(" · ");
         summary.textContent = `총 ${total}명 → ${latestGroups.length}대 배정 (${sizes}명)`;
